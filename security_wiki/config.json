@@ -1,0 +1,10 @@
+{
+  "wiki_name": "보안 LLM Wiki",
+  "web_port": 8003,
+  "ollama_url": "http://localhost:11434",
+  "ollama_model": "gemma4:latest",
+  "swiki_pages": "/home/gromit/Music/ComSwiki/swiki/AIC_Wiki/pages",
+  "index_page": 600,
+  "log_page": 601,
+  "page_start": 602
+}
