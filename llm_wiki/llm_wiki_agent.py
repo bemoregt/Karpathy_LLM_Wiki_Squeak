@@ -574,6 +574,17 @@ class WikiHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
 
+    def _swiki_base(self):
+        """요청 Host 헤더에서 서버 IP를 추출해 SwikiSwiki URL 생성.
+        config.json에 swiki_base_url 이 있으면 그것을 우선 사용."""
+        override = _CFG.get("swiki_base_url", "")
+        if override:
+            return override.rstrip("/")
+        host = self.headers.get("Host", "localhost")
+        hostname = host.split(":")[0]   # 포트 제거, IP만
+        swiki_port = _CFG.get("swiki_port", 8000)
+        return f"http://{hostname}:{swiki_port}/AIC_Wiki"
+
     def _send_html(self, body, status=200):
         b = body.encode("utf-8")
         self.send_response(status)
@@ -687,10 +698,11 @@ class WikiHandler(http.server.BaseHTTPRequestHandler):
             self._send_html("<h1>404</h1>", 404)
 
     def _page_main(self):
+        swiki_base = self._swiki_base()
         pages = self.agent.pages.all_llm_pages()
         rows = "".join(
             f'<tr>'
-            f'<td><a href="http://localhost:8000/AIC_Wiki/{p["number"]}" target="_blank">{p["number"]}</a></td>'
+            f'<td><a href="{swiki_base}/{p["number"]}" target="_blank">{p["number"]}</a></td>'
             f'<td>{html_module.escape(p["name"])}</td>'
             f'<td style="color:#555">{html_module.escape(p["text"][:120])}…</td>'
             f'</tr>'
@@ -817,8 +829,8 @@ a{{color:#3b82f6;text-decoration:none}}a:hover{{text-decoration:underline}}
   </table>
   <p style="margin-top:12px;font-size:12px;color:#888">
     SwikiSwiki에서 보기:
-    <a href="http://localhost:8000/AIC_Wiki/{INDEX_PAGE}" target="_blank">LLM Wiki 인덱스 ({INDEX_PAGE})</a> ·
-    <a href="http://localhost:8000/AIC_Wiki/{LOG_PAGE}" target="_blank">로그 ({LOG_PAGE})</a>
+    <a href="{swiki_base}/{INDEX_PAGE}" target="_blank">LLM Wiki 인덱스 ({INDEX_PAGE})</a> ·
+    <a href="{swiki_base}/{LOG_PAGE}" target="_blank">로그 ({LOG_PAGE})</a>
   </p>
 </div>
 
@@ -828,7 +840,7 @@ const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 /* ── 경량 Markdown 렌더러 ── */
 /* ── Wiki 참조 → 하이퍼링크 변환 ── */
 function linkifyWikiRefs(html) {{
-  const base = 'http://localhost:8000/AIC_Wiki/';
+  const base = '{swiki_base}/';
   // [페이지 302] 또는 [페이지302]
   html = html.replace(/\\[페이지\\s*(\\d+)\\]/g,
     (_, n) => `<a href="${{base}}${{n}}" target="_blank" class="wiki-link">📄 페이지 ${{n}}</a>`);
